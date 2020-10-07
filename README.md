@@ -8,6 +8,7 @@ Die Hardware wird mit KiCad entwickelt. Version 5.1.5 unter Ubuntu.
 
 
 ![image1](/doc/3d_pcb_01.png)
+![image2](/doc/3d_pcb_02.png)
 
 ### Verwendete Libs
 LCD Ansteuerung von Mikrokontroller.net: http://www.mikrocontroller.net/articles/AVR-GCC-Tutorial/LCD-Ansteuerung
