@@ -5,7 +5,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "Steuerung für Umbau Pizzaofen zu Reflow Ofen"
-Date "2020-10-02"
+Date "2020-10-22"
 Rev "V1.0.0"
 Comp "Thorsten Kattanek"
 Comment1 ""
@@ -205,17 +205,6 @@ $EndComp
 Wire Wire Line
 	5750 1150 5800 1150
 $Comp
-L Device:C C3
-U 1 1 5F6F3D36
-P 5100 1500
-F 0 "C3" H 5215 1546 50  0000 L CNN
-F 1 "330n" H 5215 1455 50  0000 L CNN
-F 2 "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm" H 5138 1350 50  0001 C CNN
-F 3 "~" H 5100 1500 50  0001 C CNN
-	1    5100 1500
-	1    0    0    -1  
-$EndComp
-$Comp
 L Device:C C4
 U 1 1 5F6F69E0
 P 5800 1500
@@ -260,17 +249,6 @@ Wire Wire Line
 	5450 1700 5450 1450
 Wire Wire Line
 	7100 1150 7150 1150
-$Comp
-L Device:C C5
-U 1 1 5F70263D
-P 6450 1500
-F 0 "C5" H 6565 1546 50  0000 L CNN
-F 1 "330n" H 6565 1455 50  0000 L CNN
-F 2 "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P2.50mm" H 6488 1350 50  0001 C CNN
-F 3 "~" H 6450 1500 50  0001 C CNN
-	1    6450 1500
-	1    0    0    -1  
-$EndComp
 $Comp
 L Device:C C6
 U 1 1 5F702643
@@ -1313,29 +1291,27 @@ Wire Notes Line
 $Comp
 L Device:Buzzer BZ1
 U 1 1 5F929A25
-P 5450 7200
-F 0 "BZ1" H 5602 7229 50  0000 L CNN
-F 1 "Buzzer" H 5602 7138 50  0000 L CNN
-F 2 "Buzzer_Beeper:Buzzer_TDK_PS1240P02BT_D12.2mm_H6.5mm" V 5425 7300 50  0001 C CNN
-F 3 "~" V 5425 7300 50  0001 C CNN
-	1    5450 7200
+P 5500 7050
+F 0 "BZ1" H 5652 7079 50  0000 L CNN
+F 1 "Buzzer" H 5652 6988 50  0000 L CNN
+F 2 "Buzzer_Beeper:Buzzer_TDK_PS1240P02BT_D12.2mm_H6.5mm" V 5475 7150 50  0001 C CNN
+F 3 "~" V 5475 7150 50  0001 C CNN
+	1    5500 7050
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:+5V #PWR018
 U 1 1 5F9368A1
-P 5250 7100
-F 0 "#PWR018" H 5250 6950 50  0001 C CNN
-F 1 "+5V" H 5265 7273 50  0000 C CNN
-F 2 "" H 5250 7100 50  0001 C CNN
-F 3 "" H 5250 7100 50  0001 C CNN
-	1    5250 7100
+P 4900 6950
+F 0 "#PWR018" H 4900 6800 50  0001 C CNN
+F 1 "+5V" H 4915 7123 50  0000 C CNN
+F 2 "" H 4900 6950 50  0001 C CNN
+F 3 "" H 4900 6950 50  0001 C CNN
+	1    4900 6950
 	0    -1   -1   0   
 $EndComp
 Wire Wire Line
-	5250 7100 5350 7100
-Text Notes 4950 6950 0    50   ~ 0
-Buzzer noch testen !!\nEvtl. muss noch ein \nVorwiderstand rein\n
+	5250 6950 5400 6950
 Wire Notes Line
 	4500 6450 6150 6450
 Wire Notes Line
@@ -1348,10 +1324,10 @@ Text GLabel 9450 4600 2    50   Input ~ 0
 BUZZER
 Wire Wire Line
 	9300 4600 9450 4600
-Text GLabel 5200 7300 0    50   Input ~ 0
+Text GLabel 5250 7150 0    50   Input ~ 0
 BUZZER
 Wire Wire Line
-	5200 7300 5350 7300
+	5250 7150 5400 7150
 Text Notes 5200 6550 0    50   ~ 0
 Buzzer
 $Comp
@@ -1605,4 +1581,39 @@ B7 A9 D4 D8 97 08 E7 A6 B0 9D A1 37 25 F0 FF 65 A5 42 7E A3 3D 16 64 00 00 00 00
 42 60 82 
 EndData
 $EndBitmap
+$Comp
+L Device:CP C3
+U 1 1 5F87F0C5
+P 5100 1500
+F 0 "C3" H 5218 1546 50  0000 L CNN
+F 1 "0,33u" H 5218 1455 50  0000 L CNN
+F 2 "Capacitor_THT:CP_Radial_D4.0mm_P1.50mm" H 5138 1350 50  0001 C CNN
+F 3 "~" H 5100 1500 50  0001 C CNN
+	1    5100 1500
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:CP C5
+U 1 1 5F89C4E3
+P 6450 1500
+F 0 "C5" H 6568 1546 50  0000 L CNN
+F 1 "0,33u" H 6568 1455 50  0000 L CNN
+F 2 "Capacitor_THT:CP_Radial_D4.0mm_P1.50mm" H 6488 1350 50  0001 C CNN
+F 3 "~" H 6450 1500 50  0001 C CNN
+	1    6450 1500
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R5
+U 1 1 5F927DB6
+P 5100 6950
+F 0 "R5" V 4893 6950 50  0000 C CNN
+F 1 "150" V 4984 6950 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal" V 5030 6950 50  0001 C CNN
+F 3 "~" H 5100 6950 50  0001 C CNN
+	1    5100 6950
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	4900 6950 4950 6950
 $EndSCHEMATC
