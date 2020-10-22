@@ -33,7 +33,7 @@ int main(void)
     // LCD initiallisieren
 
     lcd_init();
-
+    
     status_led_init();
 
     // Board Diagnose Start
@@ -47,10 +47,15 @@ int main(void)
         status_led_off();
         _delay_ms(50);
     }
+    
+    // Buzzer initialisieren
+    buzzer_init();
 
     // Startmeldung ausgeben
+    buzzer_on();
     show_start_message();
-
+    buzzer_on();
+    
     // Heizung initialisieren
     heating_bottom_init();
     heating_top_init();
@@ -90,11 +95,13 @@ int main(void)
         {
             heating_top_on();
             heating_bottom_on();
+            buzzer_on();
         }
         if(current_temerature < 27)
         {
             heating_top_off();
             heating_bottom_off();
+            buzzer_off();
         }
 
         _delay_ms(40);
@@ -121,8 +128,6 @@ void show_start_message(void)
 
 void init_adc(void)
 {
-    PORTC = 0x0;
-    DDRC = 0x0;
     ADMUX = 1 << REFS0 | 1 << REFS1;                // using external reference 5.0V,  result is right adjusted
     ADCSRA = 1 << ADEN | 1 << ADPS1 | 1 << ADPS2;   // enable adc // ADC Prescaler set of 64 (62,5kHz ADC Clock)
 }
