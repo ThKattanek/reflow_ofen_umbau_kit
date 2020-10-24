@@ -5,7 +5,7 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "Steuerung für Umbau Pizzaofen zu Reflow Ofen"
-Date "2020-10-22"
+Date "2020-10-24"
 Rev "V1.0.0"
 Comp "Thorsten Kattanek"
 Comment1 ""
@@ -919,11 +919,9 @@ Wire Wire Line
 Wire Wire Line
 	2650 5450 2850 5450
 Text GLabel 9450 4100 2    50   Input ~ 0
-ADC0
-Text GLabel 1850 5750 3    50   Input ~ 0
-ADC0
-Wire Wire Line
-	1850 5750 1850 5450
+TEMP_SENSOR1
+Text GLabel 1750 5850 0    50   Input ~ 0
+TEMP_SENSOR1
 Wire Notes Line
 	600  5000 3300 5000
 Wire Notes Line
@@ -1046,10 +1044,8 @@ Wire Wire Line
 	4550 5450 4700 5450
 Wire Wire Line
 	5500 5450 5700 5450
-Text GLabel 4700 5750 3    50   Input ~ 0
-ADC1
-Wire Wire Line
-	4700 5750 4700 5450
+Text GLabel 4600 5850 0    50   Input ~ 0
+TEMP_SENSOR2
 Wire Notes Line
 	3450 5000 6150 5000
 Wire Notes Line
@@ -1095,7 +1091,7 @@ Connection ~ 4700 5450
 Text Notes 3500 6300 0    50   ~ 0
 Poti wird als Einstellbarer Widerstand genutzt, für die Kalibrierung\ndes Temperatursensors. 
 Text GLabel 9450 4200 2    50   Input ~ 0
-ADC1
+TEMP_SENSOR2
 Wire Wire Line
 	9300 4200 9450 4200
 Text GLabel 9450 4300 2    50   Input ~ 0
@@ -1616,4 +1612,12 @@ F 3 "~" H 5100 6950 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	4900 6950 4950 6950
+Wire Wire Line
+	4600 5850 4700 5850
+Wire Wire Line
+	4700 5450 4700 5850
+Wire Wire Line
+	1750 5850 1850 5850
+Wire Wire Line
+	1850 5450 1850 5850
 $EndSCHEMATC

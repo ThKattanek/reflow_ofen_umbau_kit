@@ -11,6 +11,7 @@ fp-info-cache
 *.xml
 *.ses
 _autosave-*
+*.autosave
 firmware/firmware_reflow_ofen.*
 /tests
 /hardware/gerber/*.zip
