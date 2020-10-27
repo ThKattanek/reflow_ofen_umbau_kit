@@ -31,10 +31,20 @@
 #define BUZZER_DDR      DDRC
 #define BUZZER_PIN      PIN5
 
+// Motor Power
+#define MOTOR_POWER_PORT     PORTB
+#define MOTOR_POWER_DDR      DDRB
+#define MOTOR_POWER_PIN      PIN2
+
 // Temperatur Sensor 1
 #define SENSOR1_PORT    PORTC
 #define SENSOR1_DDR     DDRC
 #define SENSOR1_PIN     PIN0
+
+// Temperatur Sensor 2 (Optional)
+#define SENSOR2_PORT    PORTC
+#define SENSOR2_DDR     DDRC
+#define SENSOR2_PIN     PIN1
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -51,7 +61,10 @@
 #define heating_bottom_off() HEATING_BOTTOM_PORT |= 0x03 << HEATING_BOTTOM_PIN
 #define heating_top_off() HEATING_TOP_PORT |= 0x03 << HEATING_TOP_PIN
 
-
 #define buzzer_init() BUZZER_DDR |= 0x03 << BUZZER_PIN; BUZZER_PORT |= 0x03 << BUZZER_PIN
 #define buzzer_on() BUZZER_PORT &= ~(0x03 << BUZZER_PIN)
 #define buzzer_off() BUZZER_PORT |= 0x03 << BUZZER_PIN
+
+#define motor_power_init() MOTOR_POWER_DDR |= 1 << MOTOR_POWER_PIN
+#define motor_power_on() MOTOR_POWER_PORT |= 1 << MOTOR_POWER_PIN
+#define motor_power_off() MOTOR_POWER_PORT &= ~(1 << MOTOR_POWER_PIN)
