@@ -92,8 +92,6 @@ int main(void)
         _delay_ms(10);
     }
 
-
-    set_fan_speed(0);
     motor_power_off();
 
     // Heizung initialisieren
@@ -106,6 +104,8 @@ int main(void)
     uint16_t current_adc = 0;
     uint16_t old_adc = 0;
     int16_t current_temerature = 0;
+
+    set_fan_speed(255);
 
     while(1)
     {
@@ -135,13 +135,13 @@ int main(void)
         {
             heating_top_on();
             heating_bottom_on();
-            buzzer_on();
+            motor_power_on();
         }
         if(current_temerature < 27)
         {
             heating_top_off();
             heating_bottom_off();
-            buzzer_off();
+            motor_power_off();
         }
 
         _delay_ms(40);
