@@ -9,7 +9,7 @@ Mit dem „Reflow Ofen Umbau Kit“ (in Zukunft „Kit“ genannt) kann man eine
 |[<img src="http://img.youtube.com/vi/8IvjsnkUP-0/0.jpg" width="160" height="120">](http://www.youtube.com/watch?v=8IvjsnkUP-0 "Projekt Reflow Ofen Teil 1")|[<img src="http://img.youtube.com/vi/AaKD-QuOhvM/0.jpg" width="160" height="120">](http://www.youtube.com/watch?v=AaKD-QuOhvM "Projekt Reflow Ofen Teil 2")|
 
 ### Hardware / Schaltplan
-Die Hardware wird mit KiCad entwickelt. Version 5.1.5 unter Ubuntu.
+Die Hardware wurde mit KiCad entwickelt. Version 5.1.7 unter Ubuntu.
 
 ![image1](/doc/3d_pcb_01.png)
 ![image2](/doc/3d_pcb_02.png)
