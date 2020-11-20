@@ -5,8 +5,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "Steuerung für Umbau Pizzaofen zu Reflow Ofen"
-Date "2020-10-24"
-Rev "V1.0.0"
+Date "2020-11-20"
+Rev "V1.0.1"
 Comp "Thorsten Kattanek"
 Comment1 ""
 Comment2 ""
@@ -70,17 +70,6 @@ Wire Wire Line
 Wire Wire Line
 	4600 1700 4600 1650
 Connection ~ 4200 1700
-$Comp
-L Diode_Bridge:B40C1500G D1
-U 1 1 5F66BA49
-P 3550 1300
-F 0 "D1" H 3700 1450 50  0000 L CNN
-F 1 "B40C1500G" H 3700 1550 50  0000 L CNN
-F 2 "Diode_THT:Diode_Bridge_Vishay_GBL" H 3700 1425 50  0001 L CNN
-F 3 "https://www.vishay.com/docs/88501/b40c1500g.pdf" H 3550 1300 50  0001 C CNN
-	1    3550 1300
-	1    0    0    -1  
-$EndComp
 $Comp
 L transformer_tk:GERTH_12V_3.6VA TR1
 U 1 1 5F67DF0A
@@ -1620,4 +1609,15 @@ Wire Wire Line
 	1750 5850 1850 5850
 Wire Wire Line
 	1850 5450 1850 5850
+$Comp
+L Diode_Bridge:B40C2300-1500A D1
+U 1 1 5FB8F7B1
+P 3550 1300
+F 0 "D1" H 3700 1600 50  0000 L CNN
+F 1 "B40C2300-1500A" H 3700 1500 50  0000 L CNN
+F 2 "Diode_THT:Diode_Bridge_19.0x3.5x10.0mm_P5.0mm" H 3700 1425 50  0001 L CNN
+F 3 "https://diotec.com/tl_files/diotec/files/pdf/datasheets/b40c2300.pdf" H 3550 1300 50  0001 C CNN
+	1    3550 1300
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
