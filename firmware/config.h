@@ -7,6 +7,12 @@
  *
  */ 
 
+// Konfiguration /////////////////////////////////////////////////
+
+// LCD
+#define LCD_LINE_COUNT 4
+#define LCD_LINE_SIZE 20
+
 // Zeit in ms wie lange die Version nach dem Start angezeigt wird
 #define START_MESSAGE_TIME 1500
 
@@ -14,6 +20,35 @@
 #define STATUS_LED_PORT     PORTB
 #define STATUS_LED_DDR      DDRB
 #define STATUS_LED_PIN      PIN0
+
+// Einabetasten
+#define KEY0_DDR DDRC
+#define KEY0_PORT PORTC
+#define KEY0_PIN PINC
+#define KEY0	 PINC2
+
+#define KEY1_DDR DDRC
+#define KEY1_PORT PORTC
+#define KEY1_PIN PINC
+#define KEY1	 PINC3
+
+#define KEY2_DDR DDRC
+#define KEY2_PORT PORTC
+#define KEY2_PIN PINC
+#define KEY2	 PINC4
+
+#define get_key0() (~KEY0_PIN & (1<<KEY0))
+#define get_key1() (~KEY1_PIN & (1<<KEY1))
+#define get_key2() (~KEY2_PIN & (1<<KEY2))
+
+
+#define IMPULS_1A_PIN KEY1
+#define IMPULS_1A_PORT KEY1_PORT
+#define IMPULS_1A_DDR KEY1_DDR
+
+#define IMPULS_1B_PIN KEY0
+#define IMPULS_1B_PORT KEY0_PORT
+#define IMPULS_1B_DDR KEY0_DDR
 
 // Heizungsteuerung
 // Heizung unten

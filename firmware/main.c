@@ -22,11 +22,52 @@
 #include "./lcd.h"
 #include "./kty84-130_teperature_table.h"
 
+#include "./gui_constans.h"
+#include "./menu.h"
+#include "./settings.h"
+
 void show_start_message(void);
 void init_adc(void);
 uint16_t get_adc(void);
 void init_pwm(void);
 void set_fan_speed(uint8_t speed);
+void init_keys(void);
+void init_timer2(void);
+uint8_t get_key_from_buffer();
+void update_gui(void);
+void check_menu_events(uint16_t menu_event);
+
+volatile uint8_t adc_counter = 0;
+volatile uint16_t current_adc_value;
+uint16_t old_adc_value;
+int16_t current_temperature = 0;
+
+volatile uint16_t counter_soldering;
+
+// gui
+
+enum {MODE_HEATER_100, MODE_MENU};
+uint8_t mode = MODE_MENU;
+
+#define PHASE_1A	(PINC & (1<<IMPULS_1A_PIN))
+#define PHASE_1B	(PINC & (1<<IMPULS_1B_PIN))
+const unsigned char drehimp_tab[16]PROGMEM = {0,0,2,0,0,0,0,0,1,0,0,0,0,0,0,0};
+
+volatile uint8_t key_buffer[16];
+volatile uint8_t key_buffer_r_pos;
+volatile uint8_t key_buffer_w_pos;
+
+// MENU
+enum  MENU_IDS{M_START_100, M_HEATER_TOP, M_HEATER_BOTTOM};
+
+/*
+enum  MENU_IDS{M_BACK, M_IMAGE, M_SETTINGS, M_INFO, \
+               M_BACK_IMAGE, M_INSERT_IMAGE, M_REMOVE_IMAGE, M_WP_IMAGE, M_NEW_IMAGE, M_SAVE_IMAGE, \
+               M_BACK_SETTINGS, M_PIN_PB2, M_PIN_PB3, M_SAVE_EEPROM, M_RESTART, \
+               M_BACK_INFO, M_VERSION_INFO, M_SDCARD_INFO};
+               */
+
+MENU_STRUCT main_menu;
 
 int main(void)
 {
@@ -35,23 +76,14 @@ int main(void)
     // LCD initiallisieren
 
     lcd_init();
+
+    init_keys();
+
+    // Key Puffer leeren
+    key_buffer_r_pos = 0;
+    key_buffer_w_pos = 0;
     
     status_led_init();
-
-    // Board Diagnose Start
-    // Signalisiert durch blinken das der µC
-    // angefangen hat zu arbeiten
-
-    /*
-    for(int i=0; i<5; i++)
-    {
-        status_led_on();
-        _delay_ms(50);
-
-        status_led_off();
-        _delay_ms(50);
-    }
-    */
 
     // Buzzer initialisieren
     buzzer_init();
@@ -74,8 +106,8 @@ int main(void)
         counter1--;
     }
 
+    // Fan Selfcheck
     motor_power_on();
-
     uint8_t fan_speed = 0;
 
     while(fan_speed < 255)
@@ -91,7 +123,6 @@ int main(void)
         fan_speed--;
         _delay_ms(10);
     }
-
     motor_power_off();
 
     // Heizung initialisieren
@@ -101,50 +132,112 @@ int main(void)
     // Init ADC
     init_adc();
 
-    uint16_t current_adc = 0;
-    uint16_t old_adc = 0;
-    int16_t current_temerature = 0;
-
     set_fan_speed(255);
+
+    // Timer2 initialisieren und Interrupts freigeben
+    init_timer2();
+    sei();
+
+    /// Menüs einrichten
+    /// Hauptmenü
+    MENU_ENTRY main_menu_entrys[] = {{"Starte Loetvorgang",M_START_100,ENTRY_NORMAL,0,0},{"Heizung oben :",M_HEATER_TOP,ENTRY_ONOFF,0,0},{"Heizung unten:",M_HEATER_BOTTOM,ENTRY_ONOFF,0,0}};
+
+    main_menu.lcd_cursor_char = 2;  // 126 Standard Pfeil
+    menu_init(&main_menu, main_menu_entrys, 3,LCD_LINE_COUNT);
+
+    menu_set_root(&main_menu);
+
+    // Zeichen für Menü More Top setzen
+    uint8_t char00[] = {4,14,31,0,0,0,0,0};
+    lcd_generatechar(0, char00);
+
+    // Zeichen für Menü More Down setzen
+    uint8_t char01[] = {0,0,0,0,31,14,4,0};
+    lcd_generatechar(1, char01);
+
+    // Zeichen für Menü Position setzen
+    uint8_t arrow_char[] = {0,4,6,31,6,4,0,0};
+    lcd_generatechar(2, arrow_char);
+
+    uint8_t start_soldering = 0;
 
     while(1)
     {
-        status_led_on();
-        current_adc = get_adc();
-        status_led_off();
-
-        if(current_adc != old_adc)
+        switch(mode)
         {
-            lcd_clear();
+        case MODE_MENU:
+             update_gui();
+            break;
+        case MODE_HEATER_100:
 
-            if(current_adc >= 156 && current_adc <= 581)
+            if(old_adc_value != current_adc_value)
             {
-                current_temerature = pgm_read_word_near(temperature_table + current_adc - 156);
-                sprintf(string0,"Temperatur: %d%cC", current_temerature, 0xdf);
-                lcd_string(string0);
+                old_adc_value = current_adc_value;
+                lcd_clear();
+
+                if(current_adc_value >= 156 && current_adc_value <= 581)
+                {
+                    current_temperature = pgm_read_word_near(temperature_table + current_adc_value - 156);
+                    sprintf(string0,"Temperatur: %d%cC", current_temperature, 0xdf);
+                    lcd_string(string0);
+
+                    if(current_temperature > 180)
+                    {
+                        heating_top_off();
+                        heating_bottom_off();
+                        if(start_soldering == 0)
+                        {
+                            start_soldering = 1;
+                            counter_soldering = 0;
+                        }
+                    }
+                    if(current_temperature < 180)
+                    {
+                        heating_top_on();
+                        heating_bottom_on();
+                    }
+
+                }
+                else
+                {
+                    lcd_string("Temperatur: Error");
+                }
             }
-            else
+
+            if(counter_soldering == 600 && start_soldering == 1)
             {
-                lcd_string("Temperatur: Error");
+                start_soldering = 0;
+                mode = MODE_MENU;
+                heating_top_off();
+                heating_bottom_off();
+
+
+                buzzer_on();
+                _delay_ms(1000);
+                buzzer_off();
+                _delay_ms(500);
+                buzzer_on();
+                _delay_ms(1000);
+                buzzer_off();
+                _delay_ms(500);
+                buzzer_on();
+                _delay_ms(1000);
+                buzzer_off();
+                _delay_ms(500);
+
+                menu_refresh();
             }
 
-            old_adc = current_adc;
-        }
+            if(get_key_from_buffer() == KEY2_UP)
+            {
+                mode = MODE_MENU;
+                heating_top_off();
+                heating_bottom_off();
+                menu_refresh();
+            }
 
-        if(current_temerature > 30)
-        {
-            heating_top_on();
-            heating_bottom_on();
-            motor_power_on();
-        }
-        if(current_temerature < 27)
-        {
-            heating_top_off();
-            heating_bottom_off();
-            motor_power_off();
-        }
-
-        _delay_ms(40);
+            break;
+            }
     }
 }
 
@@ -190,4 +283,246 @@ void init_pwm(void)
 void set_fan_speed(uint8_t speed)
 {
     OCR1A = speed;
+}
+
+void init_keys(void)
+{
+    // Entsprechende Ports auf Eingangschalten
+    KEY0_DDR &= ~(1<<KEY0);
+    KEY1_DDR &= ~(1<<KEY1);
+    KEY2_DDR &= ~(1<<KEY2);
+
+    // Interne Pullup Setzen
+    KEY0_PORT |= 1<<KEY0;
+    KEY1_PORT |= 1<<KEY1;
+    KEY2_PORT |= 1<<KEY2;
+}
+
+
+void init_timer2(void)
+{
+    // Interrunpt auf 500Hz
+    TCCR2 |= (1 << WGM21) | (1 << CS20) | (1 << CS21);  // CTC Mode / Normal port operation, OC2 disconnected / Prescaler 32
+    OCR2 = 250; // Timer Top = 250
+    TIMSK |= (1 << OCIE2); // Output Compare Match Interrupt Enable
+}
+
+ISR(TIMER2_COMP_vect)
+{
+    volatile static uint8_t counter0 = 0;
+    volatile static uint16_t counter1 = 0;
+    volatile static uint8_t key2_is_pressed = 0;
+    volatile static uint8_t key2_next_up_is_invalid = 0;
+
+    volatile static uint8_t old_drehgeber = 0;
+    uint8_t pos_change;	// 0=keine Änderung 1=hoch 2=runter
+
+    volatile static uint8_t old_key2 = 0;
+
+    // Wird alle 2ms aufgerufen
+
+    // Encoder
+    old_drehgeber = (old_drehgeber << 2)  & 0x0F;
+    if (PHASE_1A) old_drehgeber |=2;
+    if (PHASE_1B) old_drehgeber |=1;
+    pos_change = (char)pgm_read_byte(&drehimp_tab[old_drehgeber]);
+
+    switch(pos_change)
+    {
+    case 1:
+        key_buffer[key_buffer_w_pos++] = KEY0_DOWN;
+        break;
+    case 2:
+        key_buffer[key_buffer_w_pos++] = KEY1_DOWN;
+        break;
+    default:
+        break;
+    }
+    key_buffer_w_pos &= 0x0f;
+
+    if(counter0 < 25)
+    {
+        counter0++;
+        return;
+    }
+
+    counter0 = 0;
+
+    // Ab hier alle 50ms
+
+    counter_soldering++;
+
+    current_adc_value = get_adc();
+    uint8_t key2 = get_key2();
+
+
+
+    if(key2 != old_key2)
+    {
+        if(key2)
+        {
+            key_buffer[key_buffer_w_pos++] = KEY2_DOWN;
+            counter1 = 0;
+            key2_is_pressed = 1;
+        }
+        else
+        {
+            if(!key2_next_up_is_invalid)
+                key_buffer[key_buffer_w_pos++] = KEY2_UP;
+            key2_is_pressed = 0;
+            key2_next_up_is_invalid = 0;
+        }
+    }
+
+    if(key2_is_pressed && counter1 == TIMEOUT1_KEY2)
+    {
+        key_buffer[key_buffer_w_pos++] = KEY2_TIMEOUT1;
+        key2_next_up_is_invalid = 1;
+    }
+
+    if(key2_is_pressed && counter1 == TIMEOUT2_KEY2)
+    {
+        key_buffer[key_buffer_w_pos++] = KEY2_TIMEOUT2;
+        key2_next_up_is_invalid = 1;
+    }
+
+    key_buffer_w_pos &= 0x0f;
+    old_key2 = key2;
+
+}
+
+uint8_t get_key_from_buffer()
+{
+    if(key_buffer_r_pos != key_buffer_w_pos)
+    {
+        uint8_t val = key_buffer[key_buffer_r_pos++];
+        key_buffer_r_pos &= 0x0f;
+        return  val;
+    }
+    else
+        return NO_KEY;
+}
+
+void update_gui(void)
+{
+    uint8_t key_code = get_key_from_buffer();
+    check_menu_events(menu_update(key_code));
+}
+
+void check_menu_events(uint16_t menu_event)
+{
+    uint8_t command = menu_event >> 8;
+    uint8_t value = menu_event & 0xff;
+
+    switch(command)
+    {
+    case MC_SELECT_ENTRY:
+        switch(value)
+        {
+        case M_START_100:
+            heating_top_on();
+            //heating_bottom_on();
+            mode = MODE_HEATER_100;
+            break;
+
+        case M_HEATER_TOP:
+            if(menu_get_entry_var1(&main_menu, M_HEATER_TOP))
+            {
+                heating_top_on();
+            }
+            else
+            {
+                heating_top_off();
+            }
+            menu_refresh();
+            break;
+
+        case M_HEATER_BOTTOM:
+            if(menu_get_entry_var1(&main_menu, M_HEATER_BOTTOM))
+            {
+                heating_bottom_on();
+            }
+            else
+            {
+                heating_bottom_off();
+            }
+            menu_refresh();
+            break;
+        }
+
+    /*
+    case MC_EXIT_MENU:
+        set_gui_mode(GUI_INFO_MODE);
+        break;
+
+    case MC_SELECT_ENTRY:
+        switch(value)
+        {
+        /// Main Menü
+
+        /// Image Menü
+        case M_INSERT_IMAGE:
+            set_gui_mode(GUI_FILE_BROWSER);
+            break;
+        case M_REMOVE_IMAGE:
+            remove_image();
+            set_gui_mode(GUI_INFO_MODE);
+            break;
+        case M_WP_IMAGE:
+            if(akt_image_type != G64_IMAGE)
+                menu_set_entry_var1(&image_menu, M_WP_IMAGE, 1);
+
+            if(menu_get_entry_var1(&image_menu, M_WP_IMAGE))
+                set_write_protection(1);
+            else
+                set_write_protection(0);
+                menu_refresh();
+            break;
+
+        /// Settings Menü
+        case M_PIN_PB2:
+            if(menu_get_entry_var1(&settings_menu, M_PIN_PB2))
+            {
+                DDRB |= 1<<PB2;
+            }
+            else
+            {
+                DDRB &= ~(1<<PB2);
+            }
+            menu_refresh();
+            break;
+
+        case M_PIN_PB3:
+            if(menu_get_entry_var1(&settings_menu, M_PIN_PB3))
+            {
+                DDRB |= 1<<PB3;
+            }
+            else
+            {
+                DDRB &= ~(1<<PB3);
+            }
+            menu_refresh();
+            break;
+
+        case M_SAVE_EEPROM:
+            break;
+
+        case M_RESTART:
+            exit_main = 0;
+            break;
+
+        /// Info Menü
+        case M_VERSION_INFO:
+            show_start_message();
+            menu_refresh();
+            break;
+
+        case M_SDCARD_INFO:
+            show_sdcard_info_message();
+            menu_refresh();
+            break;
+        }
+        break;
+        */
+    }
 }
