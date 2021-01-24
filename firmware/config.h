@@ -25,12 +25,12 @@
 #define KEY0_DDR DDRC
 #define KEY0_PORT PORTC
 #define KEY0_PIN PINC
-#define KEY0	 PINC2
+#define KEY0	 PINC3
 
 #define KEY1_DDR DDRC
 #define KEY1_PORT PORTC
 #define KEY1_PIN PINC
-#define KEY1	 PINC3
+#define KEY1	 PINC2
 
 #define KEY2_DDR DDRC
 #define KEY2_PORT PORTC

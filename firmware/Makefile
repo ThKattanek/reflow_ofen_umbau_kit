@@ -56,7 +56,7 @@ TARGET = reflow_ofen_steuerung
 
 # Interner Quarz 8MHz
 # Divide clock by 8 = disable
-LFUSE = 0xD3
+LFUSE = 0xE3
 
 # Externer Quarz
 #LFUSE = 0xFF

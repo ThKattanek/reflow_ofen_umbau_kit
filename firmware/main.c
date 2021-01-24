@@ -36,17 +36,28 @@ void init_timer2(void);
 uint8_t get_key_from_buffer();
 void update_gui(void);
 void check_menu_events(uint16_t menu_event);
+void audio_signal_final();
+void audio_beep();
 
 volatile uint8_t adc_counter = 0;
 volatile uint16_t current_adc_value;
 uint16_t old_adc_value;
 int16_t current_temperature = 0;
 
+// Optimal für 85°
+uint16_t tempern_time = 240;                    // Tempern Zeit in minuten
+uint8_t tempern_temperatur_max_start = 70;      // Tempern nach Start hier Heizung abschalten, muss dann aber min. bis tempern_temperatur kommen
+uint8_t pre_heating;
+uint8_t tempern_temperatur = 85;                // Tempern Max Temperatur
+
 volatile uint16_t counter_soldering;
+volatile uint32_t counter_tempern;
+volatile uint32_t old_counter_tempern;
+volatile uint32_t counter_tempern_max;
 
 // gui
 
-enum {MODE_HEATER_100, MODE_MENU};
+enum {MODE_SOLDERING, MODE_TEMPERN, MODE_MENU};
 uint8_t mode = MODE_MENU;
 
 #define PHASE_1A	(PINC & (1<<IMPULS_1A_PIN))
@@ -58,7 +69,8 @@ volatile uint8_t key_buffer_r_pos;
 volatile uint8_t key_buffer_w_pos;
 
 // MENU
-enum  MENU_IDS{M_START_100, M_HEATER_TOP, M_HEATER_BOTTOM};
+enum  MENU_IDS{M_START_SOLDERING, M_START_TEMPERN, M_HEATER_TOP, M_HEATER_BOTTOM, M_SETTINGS, \
+              M_BACK_SETTINGS, M_TEST1, M_TEST2};
 
 /*
 enum  MENU_IDS{M_BACK, M_IMAGE, M_SETTINGS, M_INFO, \
@@ -68,6 +80,7 @@ enum  MENU_IDS{M_BACK, M_IMAGE, M_SETTINGS, M_INFO, \
                */
 
 MENU_STRUCT main_menu;
+MENU_STRUCT settings_menu;
 
 int main(void)
 {
@@ -140,10 +153,14 @@ int main(void)
 
     /// Menüs einrichten
     /// Hauptmenü
-    MENU_ENTRY main_menu_entrys[] = {{"Starte Loetvorgang",M_START_100,ENTRY_NORMAL,0,0},{"Heizung oben :",M_HEATER_TOP,ENTRY_ONOFF,0,0},{"Heizung unten:",M_HEATER_BOTTOM,ENTRY_ONOFF,0,0}};
+    MENU_ENTRY main_menu_entrys[] = {{"Starte Loetvorgang",M_START_SOLDERING,ENTRY_NORMAL,0,0},{"Starte Tempern",M_START_TEMPERN,ENTRY_NORMAL,0,0},{"Heizung oben :",M_HEATER_TOP,ENTRY_ONOFF,0,0},{"Heizung unten:",M_HEATER_BOTTOM,ENTRY_ONOFF,0,0},{"Settings",M_SETTINGS,ENTRY_MENU,0,&settings_menu}};
+    MENU_ENTRY settings_menu_entrys[] = {{"TEST1",M_START_SOLDERING,ENTRY_NORMAL,0,0}, {"TEST2",M_START_SOLDERING,ENTRY_NORMAL,0,0}};
 
     main_menu.lcd_cursor_char = 2;  // 126 Standard Pfeil
-    menu_init(&main_menu, main_menu_entrys, 3,LCD_LINE_COUNT);
+    menu_init(&main_menu, main_menu_entrys, 5,LCD_LINE_COUNT);
+
+    settings_menu.lcd_cursor_char = 2;  // 126 Standard Pfeil
+    menu_init(&settings_menu, settings_menu_entrys, 2,LCD_LINE_COUNT);
 
     menu_set_root(&main_menu);
 
@@ -168,8 +185,7 @@ int main(void)
         case MODE_MENU:
              update_gui();
             break;
-        case MODE_HEATER_100:
-
+        case MODE_SOLDERING:
             if(old_adc_value != current_adc_value)
             {
                 old_adc_value = current_adc_value;
@@ -211,19 +227,7 @@ int main(void)
                 heating_top_off();
                 heating_bottom_off();
 
-
-                buzzer_on();
-                _delay_ms(1000);
-                buzzer_off();
-                _delay_ms(500);
-                buzzer_on();
-                _delay_ms(1000);
-                buzzer_off();
-                _delay_ms(500);
-                buzzer_on();
-                _delay_ms(1000);
-                buzzer_off();
-                _delay_ms(500);
+                audio_signal_final();
 
                 menu_refresh();
             }
@@ -235,9 +239,79 @@ int main(void)
                 heating_bottom_off();
                 menu_refresh();
             }
-
             break;
+        case MODE_TEMPERN:
+            if(old_adc_value != current_adc_value)
+            {
+                old_adc_value = current_adc_value;
+
+                if(current_adc_value >= 156 && current_adc_value <= 581)
+                {
+                    current_temperature = pgm_read_word_near(temperature_table + current_adc_value - 156);
+                    lcd_setcursor(0,2);
+                    sprintf(string0,"Temperatur: %d%cC   ", current_temperature, 0xdf);
+                    lcd_string(string0);
+
+                    if(current_temperature > tempern_temperatur_max_start && pre_heating)
+                    {
+                        heating_top_off();
+                    }
+
+                    if(current_temperature >= tempern_temperatur)
+                    {
+                        heating_top_off();
+                        pre_heating = 0;
+                    }
+
+                    if(current_temperature < tempern_temperatur && !pre_heating)
+                    {
+                        heating_top_on();
+                    }
+                }
+                else
+                {
+                    lcd_string("Temperatur: Error");
+                }
             }
+
+            if(old_counter_tempern != counter_tempern)
+            {
+                old_counter_tempern = counter_tempern;
+
+                uint16_t time_seconds = (counter_tempern_max - old_counter_tempern) / 20;
+                uint16_t minutes = time_seconds / 60;
+                uint16_t seconds = time_seconds % 60;
+                lcd_setcursor(0,3);
+                sprintf(string0,"Restzeit: %3.3d:%2.2d", minutes, seconds);
+                //sprintf(string0,"CounterMax: %d", counter_tempern_max);
+                lcd_string(string0);
+
+                char string1[21];
+                string1[20] = 0;
+                uint16_t t = (old_counter_tempern * 20) / counter_tempern_max;
+                lcd_setcursor(0,4);
+                for(uint8_t i=0; i <t; i++)
+                    lcd_data('*');
+            }
+
+            if(counter_tempern >= counter_tempern_max)
+            {
+                mode = MODE_MENU;
+                heating_top_off();
+                heating_bottom_off();
+                audio_signal_final();
+                menu_refresh();
+            }
+
+            if(get_key_from_buffer() == KEY2_UP)
+            {
+                mode = MODE_MENU;
+                heating_top_off();
+                heating_bottom_off();
+                menu_refresh();
+            }
+            break;
+         }
     }
 }
 
@@ -350,7 +424,9 @@ ISR(TIMER2_COMP_vect)
 
     // Ab hier alle 50ms
 
+    counter1++;
     counter_soldering++;
+    counter_tempern++;
 
     current_adc_value = get_adc();
     uint8_t key2 = get_key2();
@@ -416,16 +492,33 @@ void check_menu_events(uint16_t menu_event)
 
     switch(command)
     {
+    case MC_EXIT_MENU:
+        audio_signal_final();
+        break;
+
     case MC_SELECT_ENTRY:
         switch(value)
         {
-        case M_START_100:
+        case M_START_SOLDERING:
+            audio_beep();
             heating_top_on();
-            //heating_bottom_on();
-            mode = MODE_HEATER_100;
+            heating_bottom_on();
+            mode = MODE_SOLDERING;
+            break;
+
+        case M_START_TEMPERN:
+            audio_beep();
+            lcd_clear();
+            lcd_string("Tempern...");
+            heating_top_on();
+            pre_heating = 1;
+            counter_tempern_max = (uint32_t)tempern_time * 60 * 20;
+            counter_tempern = old_counter_tempern = 0;
+            mode = MODE_TEMPERN;
             break;
 
         case M_HEATER_TOP:
+            audio_beep();
             if(menu_get_entry_var1(&main_menu, M_HEATER_TOP))
             {
                 heating_top_on();
@@ -438,6 +531,7 @@ void check_menu_events(uint16_t menu_event)
             break;
 
         case M_HEATER_BOTTOM:
+            audio_beep();
             if(menu_get_entry_var1(&main_menu, M_HEATER_BOTTOM))
             {
                 heating_bottom_on();
@@ -525,4 +619,26 @@ void check_menu_events(uint16_t menu_event)
         break;
         */
     }
+}
+
+void audio_signal_final()
+{
+    buzzer_on();
+    _delay_ms(1000);
+    buzzer_off();
+    _delay_ms(500);
+    buzzer_on();
+    _delay_ms(1000);
+    buzzer_off();
+    _delay_ms(500);
+    buzzer_on();
+    _delay_ms(1000);
+    buzzer_off();
+}
+
+void audio_beep()
+{
+    buzzer_on();
+    _delay_ms(30);
+    buzzer_off();
 }
